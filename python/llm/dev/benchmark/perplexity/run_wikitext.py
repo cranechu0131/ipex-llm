@@ -34,16 +34,29 @@ parser.add_argument("--precision", type=str, default="sym_int4")
 parser.add_argument("--use-cache", action="store_true")
 parser.add_argument("--max_length", type=int, default=None)
 parser.add_argument("--mixed_precision", action="store_true") 
+parser.add_argument("--isGPTQ", action="store_true") 
 args = parser.parse_args()
 
 if args.precision == "fp16":  # ipex fp16
     from transformers import AutoModelForCausalLM
-    model = AutoModelForCausalLM.from_pretrained(args.model_path, use_cache=args.use_cache, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(args.model_path,
+                                                 use_cache=args.use_cache,
+                                                 trust_remote_code=True)
     model = model.half()
+elif args.isGPTQ:
+    from ipex_llm.transformers import AutoModelForCausalLM
+    model = AutoModelForCausalLM.from_pretrained(args.model_path,
+                                                 load_in_4bit=True,
+                                                 torch_dtype=torch.float,
+                                                 use_cache=args.use_cache,
+                                                 trust_remote_code=True)
 else:  # ipex-llm
     from ipex_llm.transformers import AutoModelForCausalLM
-    model = AutoModelForCausalLM.from_pretrained(args.model_path, load_in_low_bit=args.precision,
-                                                 use_cache=args.use_cache, trust_remote_code=True, mixed_precision= args.mixed_precision)   
+    model = AutoModelForCausalLM.from_pretrained(args.model_path,
+                                                 load_in_low_bit=args.precision,
+                                                 use_cache=args.use_cache,
+                                                 trust_remote_code=True,
+                                                 mixed_precision=args.mixed_precision)   
     model = model.half()
 model = model.to(args.device)
 model = model.eval()
@@ -106,6 +119,6 @@ for i in tqdm(range(num_chunks)):
     prev_end_loc = end_loc
     if end_loc == seq_len:
         break
-
-ppl = torch.exp(torch.stack(nlls).mean())
+avg_value = sum(tensor.item() for tensor in nlls) / len(nlls)
+ppl = torch.exp(torch.tensor(avg_value, device='xpu:0'))
 print("Final ppl estimate: {}".format(ppl.item()))
