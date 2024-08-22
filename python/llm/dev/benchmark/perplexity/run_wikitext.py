@@ -118,6 +118,5 @@ for i in tqdm(range(num_chunks)):
     prev_end_loc = end_loc
     if end_loc == seq_len:
         break
-avg_value = sum(tensor.item() for tensor in nlls) / len(nlls)
-ppl = torch.exp(torch.tensor(avg_value, device='xpu:0'))
+ppl = torch.exp(torch.stack(nlls).mean())
 print("Final ppl estimate: {}".format(ppl.item()))
