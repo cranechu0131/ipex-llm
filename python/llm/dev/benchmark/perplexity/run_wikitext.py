@@ -34,7 +34,6 @@ parser.add_argument("--precision", type=str, default="sym_int4")
 parser.add_argument("--use-cache", action="store_true")
 parser.add_argument("--max_length", type=int, default=None)
 parser.add_argument("--mixed_precision", action="store_true") 
-parser.add_argument("--isGPTQ", action="store_true") 
 args = parser.parse_args()
 
 if args.precision == "fp16":  # ipex fp16
@@ -43,7 +42,7 @@ if args.precision == "fp16":  # ipex fp16
                                                  use_cache=args.use_cache,
                                                  trust_remote_code=True)
     model = model.half()
-elif args.isGPTQ:
+elif 'gptq' in args.model_path.lower():  # ipex gptq
     from ipex_llm.transformers import AutoModelForCausalLM
     model = AutoModelForCausalLM.from_pretrained(args.model_path,
                                                  load_in_4bit=True,
